@@ -1,0 +1,7 @@
+# example /etc/ansible/hosts file 
+[nodes]
+10.10.7.58 ansible_ssh_user=jiwengang
+10.10.93.84 ansible_ssh_user=jiwengang
+
+[monitoring]
+127.0.0.1
