@@ -1,0 +1,104 @@
+# This is logstash play
+#
+# Add logstash debian repos
+#- name: Add logstash debian repos
+#  shell: echo 'deb http://packages.elasticsearch.org/logstash/1.5/debian stable main' | sudo tee /etc/yum/sources.list.d/logstash.list
+#  become: yes
+#  become_method: sudo
+
+- name: Add Elasticsearch GPG key
+  remote_user: root
+  rpm_key:
+    key: http://packages.elasticsearch.org/GPG-KEY-elasticsearch
+    state: present
+
+- name: Add logstash repository.
+  remote_user: root
+  copy:
+    src:  logstash.repo
+    dest: /etc/yum.repos.d/logstash.repo
+    mode: 0644
+
+# Install logstash
+- name: Install logstash
+  yum: name=logstash state=present update_cache=yes force=yes
+  become: yes
+  become_method: sudo
+
+#how to generate the key and cert
+#openssl req -config ../files/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout private/logstash-forwarder.key -out certs/logstash-forwarder.crt
+
+# Make the key&cert dir
+- name: Make the key and cert dir
+  file: path=/etc/pki/tls/{{ item }}  state=directory
+  with_items:
+  - certs
+  - private
+  become: yes
+  become_method: sudo
+
+# Copy the tls key
+- name: Copy the tls key
+  copy: src=private/logstash-forwarder.key dest=/etc/pki/tls/private
+  become: yes
+  become_method: sudo
+
+# Copy the tls cert
+- name: Copy the tls cert
+  copy: src=certs/logstash-forwarder.crt dest=/etc/pki/tls/certs
+  become: yes
+  become_method: sudo
+
+# Remove old logstash confs in case something conflicts
+- name: Remove old logstash confs in case something conflicts
+  shell: rm -f /etc/logstash/conf.d/*
+  become: yes
+  become_method: sudo
+
+# Copy the logstash confs
+- name: Copy the logstash confs
+  template: src={{ item }} dest=/etc/logstash/conf.d/
+  with_items:
+    - 01-lumberjack-singleline-input.conf.j2
+    - 02-lumberjack-multiline-input.conf.j2
+    - 10-syslog-filter.conf.j2
+    - 11-nginx-filter.conf.j2
+    - 12-rails-filter.conf.j2
+    - 13-mysql-slow-query-filter.conf.j2
+    - 30-elasticsearch-output.conf.j2
+  become: yes
+  become_method: sudo
+
+# Copy the logstash init.d conf
+- name: Copy the logstash init.d conf
+  template: src=logstash.j2 dest=/etc/init.d/logstash
+  become: yes
+  become_method: sudo
+
+# Ensure patterns dir exist
+- name: Ensure patterns dir exist
+  file: path=/opt/logstash/patterns state=directory owner=logstash group=logstash
+  become: yes
+  become_method: sudo
+  
+# Copy the patterns
+- name: Copy the patterns
+  copy: src=patterns/nginx dest=/opt/logstash/patterns/nginx owner=logstash group=logstash
+  become: yes
+  become_method: sudo
+
+# Download the GeoCity ip data
+- name: Download the GeoCity Ip data
+  get_url: url=http://geolite.maxmind.com/download/geoip/database/GeoLiteCity.dat.gz dest=/tmp/GeoLiteCity.dat.gz
+
+# Extract the GeoCity data
+- name: Extract the GeoCity data
+  shell: cd /tmp && gunzip GeoLiteCity.dat.gz && mv GeoLiteCity.dat /etc/logstash/
+  become: yes
+  become_method: sudo
+
+# Restart logstash server
+- name: Restart logstash server
+  service: name=logstash state=restarted
+  become: yes
+  become_method: sudo

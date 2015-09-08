@@ -1,0 +1,4 @@
+---
+# Variables here are applicable to the logstash forwarder groups
+
+logstash_forwarder_conf_name: logstash-forwarder.conf.j2

@@ -1,0 +1,63 @@
+# This is logstash-forwarder play
+
+# Add logstash forwarder source list
+#- name: Add logstash forwarder source list
+#  shell: echo 'deb http://packages.elasticsearch.org/logstashforwarder/debian stable main' | sudo tee /etc/yum/sources.list.d/logstashforwarder.list
+#  become: yes
+#  become_method: sudo
+
+# Add logstash GPG key
+#- name: Add logstash GPG key
+#  shell: wget -O - http://packages.elasticsearch.org/GPG-KEY-elasticsearch | sudo yum-key add -
+#  become: yes
+#  become_method: sudo
+
+- name: Add Elasticsearch GPG key.
+  rpm_key:
+    key: http://packages.elasticsearch.org/GPG-KEY-elasticsearch
+    state: present
+
+- name: Add logstash-forwarder repository.
+  copy:
+    src:  logstash-forwarder.repo
+    dest: /etc/yum.repos.d/logstash-forwarder.repo
+    mode: 0644
+
+# Install the logstash forwarder
+- name: Install the logstash forwarder
+  yum: name=logstash-forwarder update_cache=yes
+  become: yes
+  become_method: sudo
+
+# Make the key&cert dir
+- name: Make the key and cert dir
+  file: path=/etc/pki/tls/{{ item }}  state=directory
+  with_items:
+  - certs
+  - private
+  become: yes
+  become_method: sudo
+
+# Copy the tls key
+- name: Copy the tls key
+  copy: src=private/logstash-forwarder.key dest=/etc/pki/tls/private
+  become: yes
+  become_method: sudo
+
+# Copy the tls cert
+- name: Copy the tls cert
+  copy: src=certs/logstash-forwarder.crt dest=/etc/pki/tls/certs
+  become: yes
+  become_method: sudo
+
+# Copy the logstash forwarder conf
+- name: Copy the logstash forwarder conf
+  template: src={{ logstash_forwarder_conf_name }} dest=/etc/logstash-forwarder.conf
+  become: yes
+  become_method: sudo
+
+# Restart logstash forwarder
+- name: Restart logstash forwarder
+  service: name=logstash-forwarder state=restarted
+  become: yes
+  become_method: sudo

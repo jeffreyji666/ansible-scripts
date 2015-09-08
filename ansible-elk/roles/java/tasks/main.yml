@@ -1,0 +1,19 @@
+
+  - name: Download Java
+    command: "wget -q -O {{ java_archive }} --no-check-certificate --no-cookies --header 'Cookie: oraclelicense=accept-securebackup-cookie' {{ download_url }} creates={{java_name}}"
+
+  - name: Unpack archive
+    command: "tar -zxf {{ java_archive }} -C /opt/java creates={{ java_name }}"
+
+  - name: Fix ownership
+    file: state=directory path="{{ java_name }}" owner=root group=root recurse=yes
+ 
+  - name: java  | alternative script copy
+    copy: src=alternatives.sh dest=/opt/
+
+  ## Then we execute the script
+  - name: java  | alternative script run
+    command: sh /opt/alternatives.sh
+
+  - name: Clean up
+    file: state=absent path={{ java_archive }}

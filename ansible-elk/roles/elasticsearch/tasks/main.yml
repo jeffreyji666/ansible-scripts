@@ -1,0 +1,99 @@
+# This is elastic playbook
+
+# Add the Oracle Java PPA
+#- name: Add the Oracle Java PPA
+#  yum_repository: repo='ppa:webupd8team/java' state=present
+#  become: yes
+#  become_method: sudo
+
+# Accept Java 8 Licence
+#- name: Accept Java 8 Licence
+#  shell: echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | tee /etc/oracle-java-8-licence-acceptance | /usr/bin/debconf-set-selections
+#  args:
+#    creates: /etc/oracle-java-8-licence-acceptance
+#  become: yes
+#  become_method: sudo
+
+# Install Oracle Java 8
+#- name: Install Oracle Java 8
+#  yum: name={{item}} state=latest
+#  with_items:
+#    - oracle-java8-installer
+#    - ca-certificates
+#    - oracle-java8-set-default
+#  become: yes
+#  become_method: sudo
+
+# Ensure wget exists
+- name: Ensure wget exists
+  yum: name=wget state=present
+  become: yes
+  become_method: sudo
+
+# Ensure elasticsearch group exists
+- name: Ensure elasticsearch group exists
+  group: name=elasticsearch state=present
+  become: yes
+  become_method: sudo
+
+# Ensure elasticsearch user exists
+- name: Ensure elasticsearch user exists
+  user: name=elasticsearch group=elasticsearch state=present createhome=no
+  become: yes
+  become_method: sudo
+
+# Ensure elasticsearch data/log dir exists
+- name: Ensure elasticsearch data or log dir exists
+  file: path={{ item }} state=directory owner=elasticsearch group=elasticsearch
+  with_items:
+    - "{{ es_log_dir }}"
+    - "{{ es_data_dir }}"
+  become: yes
+  become_method: sudo
+
+- name: Add Elasticsearch GPG key.
+  rpm_key:
+    key: http://packages.elasticsearch.org/GPG-KEY-elasticsearch
+    state: present
+
+- name: Add Elasticsearch repository.
+  copy:
+    src:  elasticsearch.repo
+    dest: /etc/yum.repos.d/elasticsearch.repo
+    mode: 0644
+
+# Install the elasticsearch
+- name: Install the elasticsearch
+  yum: pkg=elasticsearch state=installed update_cache=yes
+  become: yes
+  become_method: sudo
+
+# Make sure the elastic search conf dir exists
+- name: Make sure the elastic search conf dir exist
+  file: path=/etc/elasticsearch/  state=directory
+  become: yes
+  become_method: sudo
+
+# Copy the elastic search conf file
+- name: Copy the elasticsearch conf file
+  template: src=elasticsearch.yml.j2 dest=/etc/elasticsearch/elasticsearch.yml
+  become: yes
+  become_method: sudo
+
+# Copy the elasticsearch include  script
+- name: Copy the elasticsearch include script
+  template: src=elasticsearch.in.sh.j2 dest=/usr/share/elasticsearch/bin/elasticsearch.in.sh
+  become: yes
+  become_method: sudo
+
+# init script
+- name: init script 
+  shell: curl -L http://github.com/elasticsearch/elasticsearch-servicewrapper/tarball/master | tar -xz;mv *servicewrapper*/service /usr/share/elasticsearch/bin/;rm -Rf *servicewrapper*;sudo /usr/share/elasticsearch/bin/service/elasticsearch install
+  become: yes
+  become_method: sudo
+
+# Restart the elasticsearch server
+- name: Restart the elasticsearch server
+  shell: sudo /etc/init.d/elasticsearch start
+  become: yes
+  become_method: sudo

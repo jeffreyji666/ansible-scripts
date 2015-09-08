@@ -1,0 +1,37 @@
+---
+# This playbook deploys the whole elk stack in this site.  
+
+# Apply configuration to elasticsearch hosts
+- hosts: java
+  gather_facts: yes
+  sudo: yes
+  roles: 
+  - java
+
+- hosts: elasticsearch
+  gather_facts: yes
+  sudo: yes
+  roles:
+  - elasticsearch
+
+# Apply configuration to kibana hosts
+- hosts: kibana
+  gather_facts: yes
+  sudo: yes
+  roles:
+  - kibana
+
+# Apply configuration to logstash hosts
+- hosts: logstash
+  gather_facts: yes
+  sudo: yes
+  roles:
+  - logstash
+
+# Populate the logstash facts so that the next logstash-forwarder role needs
+# to reference the logstash servers' inner ip
+- hosts: logstash
+  gather_facts: yes
+  sudo: yes
+  roles:
+  - nop

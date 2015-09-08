@@ -1,0 +1,73 @@
+# This is kibana playbook
+
+# Make kibana install path
+- name: Make kibana4 install path
+  file: path=/opt/kibana  state=directory
+  become: yes
+  become_method: sudo
+
+# Download the kibana
+- name: Download the kibana4
+  get_url: url=https://download.elasticsearch.org/kibana/kibana/kibana-4.1.1-linux-x64.tar.gz dest=/tmp/kibana-4.1.1-linux-x64.tar.gz
+
+# Extract the kibana
+- name: Extract the kibana4
+  unarchive: src=/tmp/kibana-4.1.1-linux-x64.tar.gz dest=/opt/java/ copy=no
+  become: yes
+  become_method: sudo
+
+# Change kibana dir name
+- name: Change kibana dir name
+  shell: cp -R /opt/java/kibana-4.1.1-linux-x64/* /opt/java/kibana
+  become: yes
+  become_method: sudo
+
+# Download the kibana init.d script
+- name: Download the kibana4 init.d script
+  get_url: url=https://raw.githubusercontent.com/Xaway/script/master/init_kibana dest=/etc/init.d/kibana4 mode=0755
+  become: yes
+  become_method: sudo
+
+# Add kibana to service
+- name: Add kibana4 to service
+  shell: chkconfig --add kibana4
+  become: yes
+  become_method: sudo
+
+# Copy the kibana conf file
+- name: Copy the kibana conf file
+  template: src=kibana.yml.j2 dest=/opt/kibana/config/kibana.yml
+  become: yes
+  become_method: sudo
+
+# Restart kibana
+- name: Restart kibana4
+  service: name=kibana4 state=restarted
+  become: yes
+  become_method: sudo
+
+# Install the nginx
+#- name: Install the nginx
+#  yum: name={{ item }} state=present
+#  with_items:
+#    - nginx
+#  become: yes
+#  become_method: sudo
+
+# Add kibana admin user and password
+#- name: Add kibana admin user and password
+#  shell: htpasswd -bc /etc/nginx/htpasswd.users {{ kibana_admin_account }} {{ kibana_admin_passwd }}
+#  become: yes
+#  become_method: sudo
+
+# Copy the kibana nginx conf
+#- name: Copy the kibana nginx conf
+#  template: src=kibana.j2 dest=/etc/nginx/conf.d/kibana
+#  become: yes
+#  become_method: sudo
+
+# Reload nginx conf
+#- name: reload nginx conf
+#  shell: /usr/sbin/nginx -s reload
+#  become: yes
+#  become_method: sudo

@@ -1,0 +1,5 @@
+---
+# Variables here are applicable to kibana host groups
+
+kibana_admin_account: zzzz
+kibana_admin_passwd: zzzz@zzzz
