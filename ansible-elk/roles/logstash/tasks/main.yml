@@ -26,7 +26,7 @@
   become_method: sudo
 
 #how to generate the key and cert
-#openssl req -config ../files/ssl/openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout private/logstash-forwarder.key -out certs/logstash-forwarder.crt
+#sudo openssl req -config openssl.cnf -x509 -days 3650 -batch -nodes -newkey rsa:2048 -keyout private/logstash-forwarder.key -out certs/logstash-forwarder.crt
 
 # Make the key&cert dir
 - name: Make the key and cert dir
